@@ -39,6 +39,11 @@ public:
 		return std::accumulate(a.begin(), a.end(), int64_t(0),
 			[](const int64_t& a, const jsonrpc::Value& b) { return a + b.AsInteger32(); });
 	};
+
+	jsonrpc::Value::Struct AddStruct(jsonrpc::Value::Struct s) {
+		s["c"] = s["a"].AsInteger32() + s["b"].AsInteger32();
+		return s;
+	}
 };
 
 std::string Concat(const std::string& a, const std::string& b) {
@@ -76,6 +81,7 @@ void RunServer() {
 	// if it is a member method, you must use this 3 parameter version, passing an instance of an object that implements it
 	dispatcher.AddMethod("add", &Math::Add, math);
 	dispatcher.AddMethod("add_array", &Math::AddArray, math); 
+	dispatcher.AddMethod("add_struct", &Math::AddStruct, math);
 	
 	// if it is just a regular function (non-member or static), you can you the 2 parameter AddMethod
 	dispatcher.AddMethod("concat", &Concat);
@@ -96,6 +102,8 @@ void RunServer() {
 	const char addArrayRequest[] = "{\"jsonrpc\":\"2.0\",\"method\":\"add_array\",\"id\":2,\"params\":[[1000,2147483647]]}";
 	const char toBinaryRequest[] = "{\"jsonrpc\":\"2.0\",\"method\":\"to_binary\",\"id\":3,\"params\":[\"Hello World!\"]}";
 	const char toStructRequest[] = "{\"jsonrpc\":\"2.0\",\"method\":\"to_struct\",\"id\":4,\"params\":[[12,\"foobar\",[12,\"foobar\"]]]}";
+	const char addStructRequest[] = "{\"jsonrpc\":\"2.0\",\"method\":\"add_struct\",\"id\":5,\"params\":[{\"a\":3,\"b\":2}]}";
+	const char addStruct2Request[] = "{\"jsonrpc\":\"2.0\",\"method\":\"add_struct\",\"id\":6,\"params\":{\"a\":3,\"b\":2}}";
 	const char printNotificationRequest[] = "{\"jsonrpc\":\"2.0\",\"method\":\"print_notification\",\"params\":[\"This is just a notification, no response expected!\"]}";
 
 	std::shared_ptr<jsonrpc::FormattedData> outputFormatedData;
@@ -121,6 +129,16 @@ void RunServer() {
     outputFormatedData.reset();
     std::cout << "request: " << toStructRequest << std::endl;
     outputFormatedData = server.HandleRequest(toStructRequest);
+    std::cout << "response: " << outputFormatedData->GetData() << std::endl;
+
+    outputFormatedData.reset();
+    std::cout << "request: " << addStructRequest << std::endl;
+    outputFormatedData = server.HandleRequest(addStructRequest);
+    std::cout << "response: " << outputFormatedData->GetData() << std::endl;
+
+    outputFormatedData.reset();
+    std::cout << "request: " << addStruct2Request << std::endl;
+    outputFormatedData = server.HandleRequest(addStruct2Request);
     std::cout << "response: " << outputFormatedData->GetData() << std::endl;
 
     outputFormatedData.reset();

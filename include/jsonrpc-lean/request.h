@@ -38,11 +38,13 @@ namespace jsonrpc {
         static void Write(const std::string& methodName, const Parameters& params, const Value& id, Writer& writer) {
             writer.StartDocument();
             writer.StartRequest(methodName, id);
+            writer.StartParameters(params.size());
             for (auto& param : params) {
-                writer.StartParameter();
+                writer.StartParameter(param);
                 param.Write(writer);
                 writer.EndParameter();
             }
+            writer.EndParameters();
             writer.EndRequest();
             writer.EndDocument();
         }

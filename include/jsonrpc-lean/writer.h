@@ -32,7 +32,9 @@ namespace jsonrpc {
         virtual void StartRequest(const std::string& methodName,
             const Value& id) = 0;
         virtual void EndRequest() = 0;
-        virtual void StartParameter() = 0;
+        virtual void StartParameters(const std::size_t count) = 0;
+        virtual void EndParameters() = 0;
+        virtual void StartParameter(const Value& param) = 0;
         virtual void EndParameter() = 0;
 
         // Response

@@ -21,7 +21,7 @@ namespace rapidjson { typedef ::std::size_t SizeType; }
 
 namespace jsonrpc {
 
-    class JsonWriter final : public Writer {
+    class JsonWriter : public Writer {
     public:
         JsonWriter() : myRequestData(new JsonFormattedData()) {
         }
@@ -49,17 +49,22 @@ namespace jsonrpc {
             myRequestData->Writer.String(methodName.data(), methodName.size(), true);
 
             WriteId(id);
+        }
 
+        void EndRequest() override {
+            myRequestData->Writer.EndObject();
+        }
+
+        void StartParameters(const std::size_t count) override {
             myRequestData->Writer.Key(json::PARAMS_NAME, sizeof(json::PARAMS_NAME) - 1);
             myRequestData->Writer.StartArray();
         }
 
-        void EndRequest() override {
+        void EndParameters() override {
             myRequestData->Writer.EndArray();
-            myRequestData->Writer.EndObject();
         }
 
-        void StartParameter() override {
+        void StartParameter(const Value& param) override {
             // Empty
         }
 
@@ -164,7 +169,7 @@ namespace jsonrpc {
             Write(util::FormatIso8601DateTime(value));
         }
 
-    private:
+    protected:
         void WriteId(const Value& id) {
             if (id.IsString() || id.IsInteger32() || id.IsInteger64() || id.IsNil()) {
                 myRequestData->Writer.Key(json::ID_NAME, sizeof(json::ID_NAME) - 1);

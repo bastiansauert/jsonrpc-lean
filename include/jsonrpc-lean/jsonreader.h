@@ -23,7 +23,7 @@ namespace rapidjson { typedef ::std::size_t SizeType; }
 
 namespace jsonrpc {
 
-    class JsonReader final : public Reader {
+    class JsonReader : public Reader {
     public:
         JsonReader(const std::string& data) {
             myDocument.Parse(data.c_str());
@@ -46,18 +46,7 @@ namespace jsonrpc {
                 throw InvalidRequestFault();
             }
 
-            Request::Parameters parameters;
-            auto params = myDocument.FindMember(json::PARAMS_NAME);
-            if (params != myDocument.MemberEnd()) {
-                if (!params->value.IsArray()) {
-                    throw InvalidRequestFault();
-                }
-
-                for (auto param = params->value.Begin(); param != params->value.End();
-                    ++param) {
-                    parameters.emplace_back(GetValue(*param));
-                }
-            }
+            Request::Parameters parameters = GetParams();
 
             auto id = myDocument.FindMember(json::ID_NAME);
             if (id == myDocument.MemberEnd()) {
@@ -116,7 +105,23 @@ namespace jsonrpc {
             return GetValue(myDocument);
         }
 
-    private:
+    protected:
+        virtual Request::Parameters GetParams() const {
+            Request::Parameters parameters;
+            auto params = myDocument.FindMember(json::PARAMS_NAME);
+            if (params != myDocument.MemberEnd()) {
+                if (!params->value.IsArray()) {
+                    throw InvalidRequestFault();
+                }
+
+                for (auto param = params->value.Begin(); param != params->value.End();
+                    ++param) {
+                    parameters.emplace_back(GetValue(*param));
+                }
+            }
+            return parameters;
+        }
+
         void ValidateJsonrpcVersion() const {
             auto jsonrpc = myDocument.FindMember(json::JSONRPC_NAME);
             if (jsonrpc == myDocument.MemberEnd()

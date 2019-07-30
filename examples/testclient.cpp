@@ -85,6 +85,7 @@ int main(int argc, char** argv) {
     const char concatResponse[] = "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":\"Hello, World!\"}";
     const char addArrayResponse[] = "{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":2147484647}";
     const char toStructResponse[] = "{\"jsonrpc\":\"2.0\",\"id\":4,\"result\":{\"0\":12,\"1\":\"foobar\",\"2\":[12,\"foobar\"]}}";	
+    const char addStructResponse[] = "{\"jsonrpc\":\"2.0\",\"id\":5,\"result\":{\"c\":5}}";
 	
     std::unique_ptr<jsonrpc::FormatHandler> formatHandler(new jsonrpc::JsonFormatHandler());
 
@@ -130,6 +131,21 @@ int main(int argc, char** argv) {
         std::cout << "   0 : " << structValue["0"].AsInteger32() << std::endl;
         std::cout << "   1 : " << structValue["1"].AsString() << std::endl;
         std::cout << "   2 : [" << structValue["2"].AsArray()[0] << ", " << structValue["2"].AsArray()[1] << "]" << std::endl;
+        std::cout << std::endl;
+
+        params.clear();
+        {
+            jsonrpc::Value::Struct s;
+            s["a"] = 3;
+            s["b"] = 2;
+            params.push_back(std::move(s));
+        }
+        LogCall(client, "add_struct", params);
+		parsedResponse = client.ParseResponse(addStructResponse);
+        structValue = parsedResponse.GetResult().AsStruct();
+
+        std::cout << "Parsed response: " << std::endl;
+        std::cout << "   c : " << structValue["c"].AsInteger32() << std::endl;
         std::cout << std::endl;
 
         params.clear();
