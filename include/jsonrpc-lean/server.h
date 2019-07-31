@@ -57,7 +57,6 @@ namespace jsonrpc {
                 // no FormatHandler able to handle this request type was found
                 return nullptr;
             }
-            
             auto writer = fmtHandler->CreateWriter();
 
             try {

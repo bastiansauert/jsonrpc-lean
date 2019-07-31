@@ -43,41 +43,55 @@ namespace jsonrpc {
             STRUCT
         };
 
-        Value() : myType(Type::NIL) {}
+        Value() noexcept : myType(Type::NIL) {}
 
-        Value(Array value) : myType(Type::ARRAY) {
+        Value(Array&& value) : myType(Type::ARRAY) {
             as.myArray = new Array(std::move(value));
         }
 
-        Value(bool value) : myType(Type::BOOLEAN) { as.myBoolean = value; }
+        Value(const Array& value) : myType(Type::ARRAY) {
+            as.myArray = new Array(value);
+        }
+
+        Value(bool value) noexcept : myType(Type::BOOLEAN) { as.myBoolean = value; }
 
         Value(const DateTime& value) : myType(Type::DATE_TIME) {
             as.myDateTime = new DateTime(value);
             as.myDateTime->tm_isdst = -1;
         }
 
-        Value(double value) : myType(Type::DOUBLE) { as.myDouble = value; }
+        Value(double value) noexcept : myType(Type::DOUBLE) { as.myDouble = value; }
 
-        Value(int32_t value) : myType(Type::INTEGER_32) {
+        Value(int32_t value) noexcept : myType(Type::INTEGER_32) {
             as.myInteger32 = value;
             as.myInteger64 = value;
             as.myDouble = value;
         }
 
-        Value(int64_t value) : myType(Type::INTEGER_64) {
+        Value(int64_t value) noexcept : myType(Type::INTEGER_64) {
             as.myInteger32 = static_cast<int32_t>(value);
             as.myInteger64 = value;
             as.myDouble = static_cast<double>(value);
         }
 
-        Value(const char* value) : Value(String(value)) {}
+        Value(const char* value) : myType(Type::STRING) {
+            as.myString = new String(value);
+        }
 
-        Value(String value, bool binary = false) : myType(binary ? Type::BINARY : Type::STRING) {
+        Value(String&& value, bool binary = false) : myType(binary ? Type::BINARY : Type::STRING) {
             as.myString = new String(std::move(value));
         }
 
-        Value(Struct value) : myType(Type::STRUCT) {
+        Value(const String& value, bool binary = false) : myType(binary ? Type::BINARY : Type::STRING) {
+            as.myString = new String(value);
+        }
+
+        Value(Struct&& value) : myType(Type::STRUCT) {
             as.myStruct = new Struct(std::move(value));
+        }
+
+        Value(const Struct& value) : myType(Type::STRUCT) {
+            as.myStruct = new Struct(value);
         }
 
         ~Value() {
@@ -85,23 +99,45 @@ namespace jsonrpc {
         }
 
         template<typename T>
-        Value(std::vector<T> value) : Value(Array{}) {
+        Value(std::vector<T>&& value) : Value(Array{}) {
             as.myArray->reserve(value.size());
-            for (auto& v : value) {
+            for (auto&& v : value) {
                 as.myArray->emplace_back(std::move(v));
             }
         }
 
         template<typename T>
+        Value(const std::vector<T>& value) : Value(Array{}) {
+            as.myArray->reserve(value.size());
+            for (auto&& v : value) {
+                as.myArray->emplace_back(v);
+            }
+        }
+
+        template<typename T>
+        Value(std::map<std::string, T>&& value) : Value(Struct{}) {
+            for (auto&& v : value) {
+                as.myStruct->emplace(v.first, std::move(v.second));
+            }
+        }
+
+        template<typename T>
         Value(const std::map<std::string, T>& value) : Value(Struct{}) {
-            for (auto& v : value) {
+            for (auto&& v : value) {
                 as.myStruct->emplace(v.first, v.second);
             }
         }
 
         template<typename T>
+        Value(std::unordered_map<std::string, T>&& value) : Value(Struct{}) {
+            for (auto&& v : value) {
+                as.myStruct->emplace(v.first, std::move(v.second));
+            }
+        }
+
+        template<typename T>
         Value(const std::unordered_map<std::string, T>& value) : Value(Struct{}) {
-            for (auto& v : value) {
+            for (auto&& v : value) {
                 as.myStruct->emplace(v.first, v.second);
             }
         }
@@ -149,16 +185,16 @@ namespace jsonrpc {
             return *this;
         }
 
-        bool IsArray() const { return myType == Type::ARRAY; }
-        bool IsBinary() const { return myType == Type::BINARY; }
-        bool IsBoolean() const { return myType == Type::BOOLEAN; }
-        bool IsDateTime() const { return myType == Type::DATE_TIME; }
-        bool IsDouble() const { return myType == Type::DOUBLE; }
-        bool IsInteger32() const { return myType == Type::INTEGER_32; }
-        bool IsInteger64() const { return myType == Type::INTEGER_64; }
-        bool IsNil() const { return myType == Type::NIL; }
-        bool IsString() const { return myType == Type::STRING; }
-        bool IsStruct() const { return myType == Type::STRUCT; }
+        bool IsArray() const noexcept { return myType == Type::ARRAY; }
+        bool IsBinary() const noexcept { return myType == Type::BINARY; }
+        bool IsBoolean() const noexcept { return myType == Type::BOOLEAN; }
+        bool IsDateTime() const noexcept { return myType == Type::DATE_TIME; }
+        bool IsDouble() const noexcept { return myType == Type::DOUBLE; }
+        bool IsInteger32() const noexcept { return myType == Type::INTEGER_32; }
+        bool IsInteger64() const noexcept { return myType == Type::INTEGER_64; }
+        bool IsNil() const noexcept { return myType == Type::NIL; }
+        bool IsString() const noexcept { return myType == Type::STRING; }
+        bool IsStruct() const noexcept { return myType == Type::STRUCT; }
 
         const Array& AsArray() const {
             if (IsArray()) {
@@ -224,13 +260,13 @@ namespace jsonrpc {
         template<typename T>
         inline const T& AsType() const;
 
-        Type GetType() const { return myType; }
+        Type GetType() const noexcept { return myType; }
 
         void Write(Writer& writer) const {
             switch (myType) {
             case Type::ARRAY:
                 writer.StartArray();
-                for (auto& element : *as.myArray) {
+                for (auto&& element : *as.myArray) {
                     element.Write(writer);
                 }
                 writer.EndArray();
@@ -261,7 +297,7 @@ namespace jsonrpc {
                 break;
             case Type::STRUCT:
                 writer.StartStruct();
-                for (auto& element : *as.myStruct) {
+                for (auto&& element : *as.myStruct) {
                     writer.StartStructElement(element.first);
                     element.second.Write(writer);
                     writer.EndStructElement();
@@ -366,8 +402,8 @@ namespace jsonrpc {
         case Value::Type::ARRAY: {
             os << '[';
             auto& a = value.AsArray();
-            for (auto it = a.begin(); it != a.end(); ++it) {
-                if (it != a.begin()) {
+            for (auto it = a.cbegin(); it != a.cend(); ++it) {
+                if (it != a.cbegin()) {
                     os << ", ";
                 }
                 os << *it;
@@ -402,8 +438,8 @@ namespace jsonrpc {
         case Value::Type::STRUCT: {
             os << '{';
             auto& s = value.AsStruct();
-            for (auto it = s.begin(); it != s.end(); ++it) {
-                if (it != s.begin()) {
+            for (auto it = s.cbegin(); it != s.cend(); ++it) {
+                if (it != s.cbegin()) {
                     os << ", ";
                 }
                 os << it->first << ": " << it->second;

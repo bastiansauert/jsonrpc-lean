@@ -20,7 +20,7 @@ namespace jsonrpc {
     public:
         typedef std::deque<Value> Parameters;
 
-        Request(std::string methodName, Parameters parameters, Value id)
+        Request(std::string&& methodName, Parameters&& parameters, Value&& id)
             : myMethodName(std::move(methodName)),
             myParameters(std::move(parameters)),
             myId(std::move(id)) {

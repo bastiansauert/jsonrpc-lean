@@ -15,13 +15,13 @@ namespace jsonrpc {
 
     class Response {
     public:
-        Response(Value value, Value id) : myResult(std::move(value)),
+        Response(Value&& value, Value&& id) : myResult(std::move(value)),
             myIsFault(false),
             myFaultCode(0),
             myId(std::move(id)) {
         }
 
-        Response(int32_t faultCode, std::string faultString, Value id) : myIsFault(true),
+        Response(int32_t faultCode, std::string&& faultString, Value&& id) : myIsFault(true),
             myFaultCode(faultCode),
             myFaultString(std::move(faultString)),
             myId(std::move(id)) {
@@ -41,7 +41,7 @@ namespace jsonrpc {
             writer.EndDocument();
         }
 
-        Value& GetResult() { return myResult; }
+        const Value& GetResult() { return myResult; }
         bool IsFault() const { return myIsFault; }
 
         void ThrowIfFault() const {
